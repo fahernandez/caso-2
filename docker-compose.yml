@@ -1,0 +1,7 @@
+version: '2'
+services:
+    caso-2:
+        build: .
+        image: fahernandez/caso-2:latest
+        ports:
+            - '8787:8787'
