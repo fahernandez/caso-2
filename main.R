@@ -14,6 +14,12 @@ view(data)
  
 data<-as_tibble(data)
 
+# Consumo electricidad KW
+# Consumo Gas (opcional)
+# Consumo Leña (opcional)
+# Consumo Carbon (opcional)
+# Consumo Gasolina (opcional)
+
 ##################################################################################
 ################################Descriptivos######################################
 ##################################################################################
@@ -36,7 +42,7 @@ data %>%
   print(n = Inf)
 
 
-# Viviendas por zona
+##### Viviendas por zona
 data %>%
   count(A5) %>% 
   mutate(per=n/nrow(data)) %>% 
@@ -47,4 +53,48 @@ data %>%
   scale_y_continuous(labels = scales::percent)
 
 
+##### Familias por por vivienda
+# Tal vez al ser un porcentaje tan bajo no valga la pena hacer algún ajuste por este valor
+data %>%
+  count(B1) %>% 
+  mutate(per=n/nrow(data)) 
 
+##### Personas por familia
+# Esta seria una variable interesante a relacionar con consumo energetico para 
+# ver la relación entre cantidad de personas y personas que viven en la vivienda
+# Catagorizar la variable a 5 categorías?
+data %>%
+  count(B2) %>% 
+  mutate(per=n/nrow(data)) 
+
+##### Tiene cocina?
+data %>%
+  count(CA1) %>% 
+  mutate(per=n/nrow(data)) 
+
+###### De CA1 que es tenencia de cocina, hasta CAG1 es sobre tenenencia de articulos energeticos
+
+
+#### Compañia que presta el servicio electrico
+#### Tal vez por el bajo porcentaje valdría la pena agruparlo en ICE, CNFL y otros
+data %>%
+  count(D1) %>% 
+  mutate(per=n/nrow(data)) 
+
+### Consumo medio en KW 
+data %>% 
+  select(D2, Consumo) %>% # select variables to summarise
+  map_df(.f = ~ broom::tidy(summary(.x)), .id = "variable")
+
+# Tipo de cocina
+# La mayor es la de electrica convencional y gas licuado
+# Tal vez se podría categorizar en electrica convencional, gas licuado y otros
+data %>%
+  count(Tipococ) %>% 
+  mutate(per=n/nrow(data)) 
+
+##### De la F1_A1 a la H7_C1 son sobre tenencia de articulos que consumen electricidad, me imagino que esto es valioso
+# para calcular el consumo en electricidad del hogar, agrupar estas en 3 categorías?
+data %>%
+  count(Ingreso) %>% 
+  mutate(per=n/nrow(data)) 
