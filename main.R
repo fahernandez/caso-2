@@ -4,6 +4,7 @@ library(tibble)
 library(tidyverse)
 library(ggplot2)
 #setwd("C:/Users/Anibal/Google Drive/Casos/Caso 2")
+#setwd("C:/Users/abrenes/Google Drive/Casos/Caso 2")
 data<- read.spss("./data/data.sav", to.data.frame=TRUE, use.value.labels = TRUE)
 attr(data, "variable.labels")
 summary(data)
@@ -78,7 +79,11 @@ data %>%
   mutate(per=n/nrow(data)) 
 
 ###### De CA1 que es tenencia de cocina, hasta CAG1 es sobre tenenencia de articulos energeticos
-
+ind = c(9,11:17,19:43)
+cant_art = apply(data[,ind], MARGIN = 1, FUN = function(x) sum(x == "Sí"))
+data$cant_art = cant_art
+ggplot(data, aes(x = cant_art)) + geom_histogram(binwidth = 2) + theme_bw() +
+  labs(x = "Cantidad de artículos", y = "Cantidad de viviendas", title = "Cantidad de artículos por vivienda")
 
 #### Compañia que presta el servicio electrico
 #### Tal vez por el bajo porcentaje valdría la pena agruparlo en ICE, CNFL y otros
