@@ -3,6 +3,7 @@ library(foreign)
 library(tibble)
 library(tidyverse)
 library(ggplot2)
+library(extrafont) 
 #setwd("C:/Users/Anibal/Google Drive/Casos/Caso 2")
 #setwd("C:/Users/abrenes/Google Drive/Casos/Caso 2")
 data<- read.spss("./data/data.sav", to.data.frame=TRUE, use.value.labels = TRUE)
@@ -25,15 +26,24 @@ data<-as_tibble(data)
 ################################Descriptivos######################################
 ##################################################################################
 # Viviendas por provincia
-data %>%
-  group_by(A1) %>% 
-  tally() %>%
-  #print(n = Inf) %>% 
-  ggplot(aes(x = reorder(A1,-n), y = n)) + geom_bar(stat = "identity") +
-    theme_bw() + labs(x = "Provincia", y = "Viviendas", 
-                        title = "Cantidad de viviendas por provincia")
+prov<-data %>%
+  count(A1, A5)
+
+ggplot(prov, aes(x = reorder(A1,-n))) + 
+  geom_bar(aes(weight = n, fill = A5)) +
+  labs(x = "Provincias de Costa Rica", y = "Cantidad de Viviendas", fill = "Zona") +
+  scale_fill_brewer(palette = "Dark2") +
+  theme(text = element_text(size=10, family="LM Roman 10")) +
+  theme(plot.subtitle = element_text(vjust = 1), 
+        plot.title = element_text(vjust = 1), 
+        plot.caption = element_text(vjust = 2)) +labs(title = "Figura 1: Cantidad de viviendas por provincia",
+                                                      subtitle = "Divididas por la zona de planificación", 
+                                                      caption = "Fuente: Encuesta consumo de energía en Hogares, 2012")
+
 ggsave("./viv_por_prov.png", units="cm", height = 8, width = 15.5)
 dev.off()
+
+
 # Viviendas por canton
 data %>%
   group_by(A1, A3) %>% 
@@ -58,7 +68,6 @@ data %>%
   scale_y_continuous(labels = scales::percent)
 
 
-<<<<<<< HEAD
 ##### Familias por por vivienda
 # Tal vez al ser un porcentaje tan bajo no valga la pena hacer algún ajuste por este valor
 data %>%
@@ -108,6 +117,37 @@ data %>%
 data %>%
   count(Ingreso) %>% 
   mutate(per=n/nrow(data)) 
+
+#### Categorización de ingreso familiar
+data %>%
+  count(L9) %>% 
+  mutate(per=n/nrow(data)) 
+
+#### Nivel educativo 
+data %>%
+  count(Niveleduc) %>% 
+  mutate(per=n/nrow(data)) 
+
+# Mas alto el consumo energetico en la zona urbana que en la zona rural, porque?
+data %>% 
+  group_by(A5) %>% 
+  summarise(m=mean(totalgeneral), v=var(totalgeneral), sd=sd(totalgeneral))
+
+data %>%
+  group_by(Ingreso, A5) %>% 
+  tally()
+
+# Parece no haber una correlación entre la cantidad de personas que duermen en el hogar y el consumo de energía
+cor(data$B2, data$totalgeneral)
+
+
+
+# Que tal un indice ponderado por el consumo energetico? Asi daría más peso a la tenencia de artefactos que más consumen?
+
+
+
+
+
 
 #####
 # ingreso medio por provincia
