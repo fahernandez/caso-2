@@ -4,6 +4,7 @@ library(tibble)
 library(tidyverse)
 library(ggplot2)
 library(extrafont) 
+library(RColorBrewer)
 #setwd("C:/Users/Anibal/Google Drive/Casos/Caso 2")
 #setwd("C:/Users/abrenes/Google Drive/Casos/Caso 2")
 data<- read.spss("./data/data.sav", to.data.frame=TRUE, use.value.labels = TRUE)
@@ -11,6 +12,8 @@ attr(data, "variable.labels")
 summary(data)
 names(data)
 view(data)
+
+palett<-"Dark2"
 
 # Change to tible table
  
@@ -29,16 +32,12 @@ data<-as_tibble(data)
 prov<-data %>%
   count(A1, A5)
 
-ggplot(prov, aes(x = reorder(A1,-n))) + 
-  geom_bar(aes(weight = n, fill = A5)) +
-  labs(x = "Provincias de Costa Rica", y = "Cantidad de Viviendas", fill = "Zona") +
-  scale_fill_brewer(palette = "Dark2") +
+ggplot(prov, aes(x = reorder(A1,-n), weight = n, fill = A5)) + 
+  geom_bar() +
+  labs(x = "Provincias de Costa Rica", y = "Cantidad de Viviendas") +
+  scale_fill_manual(values = list(color = brewer.pal(3, palett))$color[1:2], name = "Zona", labels = c("Urbana", "Rural")) +
   theme(text = element_text(size=10, family="LM Roman 10")) +
-  theme(plot.subtitle = element_text(vjust = 1), 
-        plot.title = element_text(vjust = 1), 
-        plot.caption = element_text(vjust = 2)) +labs(title = "Figura 1: Cantidad de viviendas por provincia",
-                                                      subtitle = "Divididas por la zona de planificación", 
-                                                      caption = "Fuente: Encuesta consumo de energía en Hogares, 2012")
+  theme(plot.caption = element_text(vjust = 2)) +labs(caption = "Fuente: Encuesta consumo de energía en Hogares, 2012")
 
 ggsave("./viv_por_prov.png", units="cm", height = 8, width = 15.5)
 dev.off()
@@ -78,10 +77,11 @@ data %>%
 # Esta seria una variable interesante a relacionar con consumo energetico para 
 # ver la relación entre cantidad de personas y personas que viven en la vivienda
 # Catagorizar la variable a 5 categorías?
-data %>%
+hab<-data %>%
   count(B2) %>% 
-  mutate(per=n/nrow(data)) 
+  mutate(per=n/nrow(data))
 
+mean(data$B2)
 ##### Tiene cocina?
 data %>%
   count(CA1) %>% 
@@ -118,16 +118,47 @@ data %>%
   count(Ingreso) %>% 
   mutate(per=n/nrow(data)) 
 
+ingre<-data %>%
+  count(Ingreso, A5)
+
+ggplot(prov, aes(x = reorder(ingre,-n), weight = n, fill = A5)) + 
+  geom_bar() 
+
+
 #### Categorización de ingreso familiar
 data %>%
   count(L9) %>% 
   mutate(per=n/nrow(data)) 
 
 #### Nivel educativo 
-data %>%
-  count(Niveleduc) %>% 
-  mutate(per=n/nrow(data)) 
-
+ing <- data %>%
+  filter(!Niveleduc %in% c("No se sabe") ) %>% 
+  filter(Ingreso !="No respondieron") %>% 
+  mutate(
+    Niveleducrec = case_when(
+      Niveleduc == "Ninguno" ~ "Secundaria o menos",
+      Niveleduc == "Primaria incompleta" ~ "Secundaria o menos",
+      Niveleduc == "Primaria completa"     ~ "Secundaria o menos",
+      Niveleduc == "Secundaria incompleta"     ~ "Secundaria o menos",
+      Niveleduc == "Secundaria completa"     ~ "Secundaria o menos",
+      Niveleduc == "Algun año universidad"     ~ "Algún año Universidad",
+      TRUE ~ "other"
+    )
+  ) %>% 
+  count(Niveleducrec, Ingreso) 
+  
+  ggplot(ing, aes(x = Ingreso, weight = n, fill = Niveleducrec)) + 
+    geom_bar() +
+    labs(x = "Ingreso familiar en miles de colones", y = "Cantidad de Viviendas") +
+    scale_fill_manual(values = list(color = brewer.pal(7, palett))$color[1:7], name = "Nivel educativo", labels = c("Universidad", "Secundaria")) +
+    scale_x_discrete(labels=c("500 o menos", "501 a 750", "751 a 1000", "más de 1000")) +
+    theme(text = element_text(size=10, family="LM Roman 10")) +
+    theme(plot.caption = element_text(vjust = 2)) +labs(caption = "Fuente: Encuesta consumo de energía en Hogares, 2012")
+  
+  ggsave("./ing_por_educ.png", units="cm", height = 8, width = 15.5)
+  dev.off()
+  
+  
 # Mas alto el consumo energetico en la zona urbana que en la zona rural, porque?
 data %>% 
   group_by(A5) %>% 
