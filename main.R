@@ -162,7 +162,7 @@ ing <- data %>%
   #### We will create two index, one for social economic status and one for articles
   # Variables para realizar la agrupacion  
   #1 Indice de tenencia de articulos de alta gama
-  data %>% 
+  ten = data %>% 
     mutate(cocina=if_else(CA1=="Si" | CA1=="Sí", 1, 0, missing = 0)) %>%
     mutate(hornoC=if_else(CB1=="Si" | CB1=="Sí", 1, 0, missing = 0)) %>% 
     mutate(lavaPlatos=if_else(CL1=="Si" | CL1=="Sí", 1, 0, missing = 0)) %>% 
@@ -185,12 +185,14 @@ ing <- data %>%
            +calentadorSolar+aireAcon+bombaAgua+plantaElec+portonElec+impresora+compu+consol+aspiradora+tel+ref)/18) %>% 
     select(tenencia)
   
+  data$tenencia = ten
+  
   # 2. Estado-Area Urbana y Rural (A5)
   
   # 3. Las variables de consumo energetico al final del documento
   
   # 4. Indice Socieconómico
-data %>% 
+ind = data %>% 
   mutate(ing=case_when(
     Ingreso == "500 mil colones o menos" ~ 1,
     Ingreso == "501 mil a 750 mil"  ~ 2,
@@ -200,9 +202,36 @@ data %>%
   )) %>% 
   mutate(indiceSocio=(ing+if_else(!is.na(L8), as.numeric(L8), 0)+if_else(!is.na(L9), as.numeric(L9), 0))/24) %>% 
   select(indiceSocio)
+data$IndiceSocio = ind
 
+attr(data, "variable.labels")
 
+#cuál tipo de energía consumen más
+mayor_consumo = data[,105:108] %>% 
+  apply(1, FUN = function(x) which(x == max(x))) 
+data$mayor_consumo = mayor_consumo
 
+data_kmeans = data %>% select(A5, IndiceSocio, tenencia, mayor_consumo, TOTALTJ)
+apply(data_kmeans, 2, FUN = function(x) sum(is.na(x)))
+
+data_kmeans$A5 = data_kmeans$A5 %>% as.numeric(.)
+
+km2 = kmeans(data_kmeans, centers = 3, nstart = 30)
+p1 <- fviz_cluster(km2, data = data_kmeans, frame.type = "convex") +
+  theme_minimal() + ggtitle("k = 2") 
+p1
+
+fviz_nbclust(data_kmeans, kmeans, method = "wss", k.max = 24) + theme_minimal() + ggtitle("the Elbow Method")
+
+gap_stat <- clusGap(data_kmeans, FUN = kmeans, nstart = 30, K.max = 24, B = 50)
+fviz_gap_stat(gap_stat) + theme_minimal() + ggtitle("fviz_gap_stat: Gap Statistic")
+
+fviz_nbclust(data_kmeans, kmeans, method = "silhouette", k.max = 24) + theme_minimal() + ggtitle("The Silhouette Plot")
+
+res.nbclust <- NbClust(data_kmeans, distance = "euclidean",
+                       min.nc = 2, max.nc = 9, 
+                       method = "complete", index ="all")
+factoextra::fviz_nbclust(res.nbclust) + labs(x = "Número de clusters") +theme_minimal() + ggtitle("NbClust's optimal number of clusters")
 
 
 # Mas alto el consumo energetico en la zona urbana que en la zona rural, porque?
