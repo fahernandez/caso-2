@@ -149,20 +149,107 @@ ing <- data %>%
   
   ggplot(ing, aes(x = Ingreso, weight = n, fill = Niveleducrec)) + 
     geom_bar() +
-    labs(x = "Ingreso familiar en miles de colones", y = "Cantidad de Viviendas") +
+    labs(x = "Ingreso familiar en colones", y = "Cantidad de Viviendas") +
     scale_fill_manual(values = list(color = brewer.pal(7, palett))$color[1:7], name = "Nivel educativo", labels = c("Universidad", "Secundaria")) +
-    scale_x_discrete(labels=c("500 o menos", "501 a 750", "751 a 1000", "más de 1000")) +
+    scale_x_discrete(labels=c("500 mil o menos", "501 mil a 750 mil", "751 a 1 millón", "más de 1 millón")) +
     theme(text = element_text(size=10, family="LM Roman 10")) +
     theme(plot.caption = element_text(vjust = 2)) +labs(caption = "Fuente: Encuesta consumo de energía en Hogares, 2012")
   
   ggsave("./ing_por_educ.png", units="cm", height = 8, width = 15.5)
   dev.off()
+
+
+  #### We will create two index, one for social economic status and one for articles
+  # Variables para realizar la agrupacion  
+  #1 Indice de tenencia de articulos de alta gama
+  data %>% 
+    mutate(cocina=if_else(CA1=="Si" | CA1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(hornoC=if_else(CB1=="Si" | CB1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(lavaPlatos=if_else(CL1=="Si" | CL1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(lavadoraRopa=if_else(CN1=="Si" | CN1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(secodaraRopa=if_else(CP1=="Si" | CP1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(tanqueAgua=if_else(CR1=="Si" | CR1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(tanqueAguaIns=if_else(CS1=="Si" | CS1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(calentadorSolar=if_else(CT1=="Si" | CT1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(aireAcon=if_else(CU1=="Si" | CU1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(bombaAgua=if_else(CV1=="Si" | CV1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(plantaElec=if_else(CX1=="Si" | CX1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(portonElec=if_else(CY1=="Si" | CY1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(impresora=if_else(CAF1=="Si" | CAF1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(compu=if_else(H1=="Si" | H1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(consol=if_else(H4=="Si" | H4=="Sí", 1, 0, missing = 0)) %>%
+    mutate(aspiradora=if_else(H7_C1=="Si" | H7_C1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(tel=if_else(Totaltv!=0, 1, 0)) %>% 
+    mutate(ref=if_else(G1=="1", 1, if_else(G1=="2", 1, if_else(G1=="3", 1, 0)), missing = 0)) %>%  
+    mutate(tenencia=(cocina+hornoC+lavaPlatos+lavadoraRopa+secodaraRopa+tanqueAgua+tanqueAguaIns
+           +calentadorSolar+aireAcon+bombaAgua+plantaElec+portonElec+impresora+compu+consol+aspiradora+tel+ref)/18) %>% 
+    select(tenencia)
   
+  # 2. Estado-Area Urbana y Rural (A5)
   
+  # 3. Las variables de consumo energetico al final del documento
+  
+  # 4. Indice Socieconómico
+data %>% 
+  mutate(ing=case_when(
+    Ingreso == "500 mil colones o menos" ~ 1,
+    Ingreso == "501 mil a 750 mil"  ~ 2,
+    Ingreso == "751 mil a un millón" ~ 3,
+    Ingreso == "Más de un millón" ~ 4,
+    TRUE ~ 0
+  )) %>% 
+  mutate(indiceSocio=(ing+if_else(!is.na(L8), as.numeric(L8), 0)+if_else(!is.na(L9), as.numeric(L9), 0))/24) %>% 
+  select(indiceSocio)
+
+
+
+
+
 # Mas alto el consumo energetico en la zona urbana que en la zona rural, porque?
 data %>% 
-  group_by(A5) %>% 
   summarise(m=mean(totalgeneral), v=var(totalgeneral), sd=sd(totalgeneral))
+
+data %>% 
+  summarise(m=mean(!is.na(data$Consumocarb)), v=var(!is.na(data$Consumocarb)), sd=sd(!is.na(data$Consumocarb)), count=sum(!is.na(Consumocarb)))
+
+data %>% 
+  summarise(m=mean(CARBONTJ), v=var(CARBONTJ), sd=sd(CARBONTJ))
+
+data %>% 
+  filter(!is.na(Consumocarb)) %>% 
+  summarise(m=mean(Consumocarb), v=var(Consumocarb), sd=sd(Consumocarb), count=sum(Consumocarb))
+
+carboncon<-data %>% 
+  filter(!is.na(Consumocarb)) %>% 
+  select(A5, K2, L2, Niveleduc, Ocupaciónrec, L8, L9, Ingreso, PRODCALOR)
+
+carboncon %>% 
+  count(A5, K2)
+
+data %>% 
+  count(CM1)
+
+data %>% 
+  summarise(m=mean(LEÑATJ), v=var(LEÑATJ), sd=sd(LEÑATJ))
+
+data %>% 
+  filter(!is.na(conleña)) %>% 
+  summarise(m=mean(conleña), v=var(conleña), sd=sd(conleña), count=n())
+
+data %>% 
+  summarise(m=mean(GASTJ), v=var(GASTJ), sd=sd(GASTJ))
+
+data %>% 
+  filter(Gastogas!=0.000000) %>% 
+  summarise(m=mean(Gastogas), v=var(Gastogas), sd=sd(Gastogas), count=n())
+
+data %>% 
+  summarise(m=mean(ELECTJ), v=var(ELECTJ), sd=sd(ELECTJ))
+
+data %>% 
+  filter(Consumo==0) %>% 
+  summarise(m=mean(Consumo), v=var(Consumo), sd=sd(Consumo), count=n())
+
 
 data %>%
   group_by(Ingreso, A5) %>% 
