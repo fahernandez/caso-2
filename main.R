@@ -181,7 +181,7 @@ ing <- data %>%
   #### We will create two index, one for social economic status and one for articles
   # Variables para realizar la agrupacion  
   #1 Indice de tenencia de articulos de alta gama
-  ten = data %>% 
+   valTenencia<-data %>% 
     mutate(cocina=if_else(CA1=="Si" | CA1=="Sí", 1, 0, missing = 0)) %>%
     mutate(hornoC=if_else(CB1=="Si" | CB1=="Sí", 1, 0, missing = 0)) %>% 
     mutate(lavaPlatos=if_else(CL1=="Si" | CL1=="Sí", 1, 0, missing = 0)) %>% 
@@ -200,18 +200,24 @@ ing <- data %>%
     mutate(aspiradora=if_else(H7_C1=="Si" | H7_C1=="Sí", 1, 0, missing = 0)) %>% 
     mutate(tel=if_else(Totaltv!=0, 1, 0)) %>% 
     mutate(ref=if_else(G1=="1", 1, if_else(G1=="2", 1, if_else(G1=="3", 1, 0)), missing = 0)) %>%  
-    mutate(tenencia=(cocina+hornoC+lavaPlatos+lavadoraRopa+secodaraRopa+tanqueAgua+tanqueAguaIns
-           +calentadorSolar+aireAcon+bombaAgua+plantaElec+portonElec+impresora+compu+consol+aspiradora+tel+ref)/18) %>% 
-    select(tenencia)
+    mutate(tenencia=cocina+hornoC+lavaPlatos+lavadoraRopa+secodaraRopa+tanqueAgua+tanqueAguaIns
+           +calentadorSolar+aireAcon+bombaAgua+plantaElec+portonElec+impresora+compu+consol+aspiradora+tel+ref) %>% 
+     mutate(indiceTenencia=tenencia/18) %>% 
+    select(tenencia, indiceTenencia, A5, D2, Consumo, ELECTJ)
+
+   valTenencia %>% 
+     group_by(A5) %>% 
+     summarise(val=mean(indiceTenencia))
+   
+  data$tenencia = valTenencia$indiceTenencia
   
-  data$tenencia = ten
   
   # 2. Estado-Area Urbana y Rural (A5)
   
   # 3. Las variables de consumo energetico al final del documento
   
   # 4. Indice Socieconómico
-ind = data %>% 
+valSocio = data %>% 
   mutate(ing=case_when(
     Ingreso == "500 mil colones o menos" ~ 1,
     Ingreso == "501 mil a 750 mil"  ~ 2,
@@ -219,9 +225,27 @@ ind = data %>%
     Ingreso == "Más de un millón" ~ 4,
     TRUE ~ 0
   )) %>% 
-  mutate(indiceSocio=(ing+if_else(!is.na(L8), as.numeric(L8), 0)+if_else(!is.na(L9), as.numeric(L9), 0))/24) %>% 
-  select(indiceSocio)
-data$IndiceSocio = ind
+  mutate(Socio=ing+if_else(!is.na(L8), as.numeric(L8), 0)+if_else(!is.na(L9), as.numeric(L9), 0)) %>% 
+  mutate(indiceSocio=Socio/24) %>% 
+  select(indiceSocio, Socio, A5, D2, Consumo, ELECTJ) 
+
+cor(valSocio$indiceSocio, valSocio$ELECTJ)
+cor(valSocio$indiceSocio, valSocio$Consumo)
+valSocio %>% 
+  group_by(A5) %>% 
+  summarise(val=mean(indiceSocio))
+
+
+cor(valSocio$indiceSocio, valTenencia$indiceTenencia)
+cor(data$CARBONTJ, valSocio$indiceSocio)
+cor(data$Consumo, valSocio$indiceSocio)
+cor(data$ELECTJ, valTenencia$indiceTenencia)
+cor(data$Consumo, valTenencia$indiceTenencia)
+cor(data$A5, valTenencia$indiceTenencia)
+
+data$IndiceSocio = valSocio$indiceSocio
+
+cor(data$tenencia, data$IndiceSocio)
 
 attr(data, "variable.labels")
 
@@ -292,47 +316,151 @@ data %>%
   summarise(m=mean(!is.na(data$Consumocarb)), v=var(!is.na(data$Consumocarb)), sd=sd(!is.na(data$Consumocarb)), count=sum(!is.na(Consumocarb)))
 
 data %>% 
-  summarise(m=mean(CARBONTJ), v=var(CARBONTJ), sd=sd(CARBONTJ))
+  filter(CARBONTJ!=0) %>% 
+  select(CARBONTJ) 
+
+data %>% 
+  summarise(m=mean(CARBONTJ), v=var(CARBONTJ), sd=sd(CARBONTJ), count=n())
 
 data %>% 
   filter(!is.na(Consumocarb)) %>% 
+  count(Ocupaciónrec)
   summarise(m=mean(Consumocarb), v=var(Consumocarb), sd=sd(Consumocarb), count=sum(Consumocarb))
 
+  data %>% 
+    filter(!is.na(Consumocarb)) %>% 
+    count(Ocupaciónrec) %>% 
+    mutate(freq=n/85) %>% 
+    arrange(freq)
+  
 carboncon<-data %>% 
   filter(!is.na(Consumocarb)) %>% 
   select(A5, K2, L2, Niveleduc, Ocupaciónrec, L8, L9, Ingreso, PRODCALOR)
 
-carboncon %>% 
-  count(A5, K2)
+cor(data$IndiceSocio, data$CARBONTJ)
+cor(data$tenencia, data$CARBONTJ)
+cor(data$B2, data$CARBONTJ)
+
+
 
 data %>% 
-  count(CM1)
+  filter(LEÑATJ!=0) %>%
+  count(A5)
+  select(LEÑATJ) 
 
 data %>% 
-  summarise(m=mean(LEÑATJ), v=var(LEÑATJ), sd=sd(LEÑATJ))
+  filter(LEÑATJ!=0) %>% 
+  summarise(m=mean(LEÑATJ), v=var(LEÑATJ), sd=sd(LEÑATJ), count=n())
 
 data %>% 
   filter(!is.na(conleña)) %>% 
   summarise(m=mean(conleña), v=var(conleña), sd=sd(conleña), count=n())
 
+  data %>% 
+    filter(!is.na(conleña)) %>% 
+    count(Ocupaciónrec) %>% 
+    mutate(freq=n/169) %>% 
+    arrange(freq)
+  
 data %>% 
-  summarise(m=mean(GASTJ), v=var(GASTJ), sd=sd(GASTJ))
+  filter(!is.na(conleña)) %>% 
+  count(SEXO)
+
+# Primera cocina consumo
+data %>% 
+  filter(CA3=="Leña") %>% 
+  count()
 
 data %>% 
-  filter(Gastogas!=0.000000) %>% 
+  filter(CH3=="Leña") %>% 
+  count()
+
+data %>% 
+  filter(Tipococ=="Leña") %>% 
+  count()
+  
+
+cor(data$IndiceSocio, data$LEÑATJ)
+cor(data$tenencia, data$LEÑATJ)
+cor(data$B2, data$LEÑATJ)
+
+
+data %>% 
+  filter(GASTJ!=0) %>% 
+  summarise(m=mean(GASTJ), v=var(GASTJ), sd=sd(GASTJ), count=n())
+
+boxplot(data$Gastogas)
+
+data %>% 
+  filter(Gastogas!=0) %>% 
   summarise(m=mean(Gastogas), v=var(Gastogas), sd=sd(Gastogas), count=n())
+
+data %>% 
+  filter(Gastogas!=0) %>% 
+  count(SEXO, Ocupaciónrec) %>% 
+  arrange(desc(n))
+
+data %>% 
+  filter(Gastogas!=0) %>%  
+  count(Ocupaciónrec) %>% 
+  mutate(freq=n/654) %>% 
+  arrange(freq)
+
+data %>% 
+  filter(Gastogas!=0) %>%  
+  count(A5) %>% 
+  mutate(freq=n/654) %>% 
+  arrange(freq)
+
+# 372
+data %>%
+  filter(!is.na(CA3)) %>% 
+  count(CA3)
+
+# 275
+data %>%
+  filter(!is.na(CH3)) %>% 
+  count(CH3)
+
+data %>%
+  filter(!is.na(Tipococ)) %>% 
+  count(Tipococ) %>% 
+  mutate(fre=n/1515)
+
+cor(data$IndiceSocio, data$GASTJ)
+cor(data$tenencia, data$GASTJ)
+cor(data$B2, data$GASTJ)
 
 data %>% 
   summarise(m=mean(ELECTJ), v=var(ELECTJ), sd=sd(ELECTJ))
 
 data %>% 
-  filter(Consumo==0) %>% 
+  filter(!is.na(Consumo)) %>% 
   summarise(m=mean(Consumo), v=var(Consumo), sd=sd(Consumo), count=n())
 
+data %>% 
+  filter(Consumo!=0) %>% 
+  count(SEXO) %>% 
+  arrange(desc(n))
 
-data %>%
-  group_by(Ingreso, A5) %>% 
-  tally()
+data %>% 
+  filter(Consumo!=0) %>%  
+  count(Ocupaciónrec) %>% 
+  mutate(freq=n/1515) %>% 
+  arrange(freq)
+
+sum(data$Consumo>1000)
+
+data %>% 
+  filter(Consumo!=0) %>%  
+  count(A5) %>% 
+  mutate(freq=n/1515) %>% 
+  arrange(freq)
+
+cor(data$IndiceSocio, data$ELECTJ)
+cor(data$tenencia, data$ELECTJ)
+cor(data$B2, data$ELECTJ)
+
 
 # Parece no haber una correlación entre la cantidad de personas que duermen en el hogar y el consumo de energía
 cor(data$B2, data$totalgeneral)
