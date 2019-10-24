@@ -5,6 +5,25 @@ library(tidyverse)
 library(ggplot2)
 library(extrafont) 
 library(RColorBrewer)
+library(magrittr)
+library(cluster)
+library(cowplot)
+library(NbClust)
+library(clValid)
+library(ggfortify)
+library(clustree)
+library(dendextend)
+library(factoextra)
+library(FactoMineR)
+library(corrplot)
+library(GGally)
+library(ggiraphExtra)
+library(knitr)
+library(kableExtra)
+
+#install.packages(c("cluster", "cowplot", "NbClust", "ggfortify", "clustree", "dendextend", 
+#                   "factoextra", "FactoMineR", "corrplot", "GGally", "ggiraphExtra", "kableExtra"))
+
 #setwd("C:/Users/Anibal/Google Drive/Casos/Caso 2")
 #setwd("C:/Users/abrenes/Google Drive/Casos/Caso 2")
 data<- read.spss("./data/data.sav", to.data.frame=TRUE, use.value.labels = TRUE)
@@ -235,28 +254,59 @@ mayor_consumo = data[,105:108] %>%
   apply(1, FUN = function(x) which(x == max(x))) 
 data$mayor_consumo = mayor_consumo
 
-data_kmeans = data %>% select(A5, IndiceSocio, tenencia, mayor_consumo, TOTALTJ)
+data_kmeans = data %>% select(A5, B2, IndiceSocio, tenencia, ELECTJ, GASTJ, LEÑATJ)
 apply(data_kmeans, 2, FUN = function(x) sum(is.na(x)))
+head(data_kmeans)
 
 data_kmeans$A5 = data_kmeans$A5 %>% as.numeric(.)
+data_km_sc = scale(data_kmeans)
+#### PCA ####
+res.pca <- PCA(data_km_sc,  graph = FALSE)
+# Visualize eigenvalues/variances
+fviz_screeplot(res.pca, addlabels = TRUE, ylim = c(0, 50))
+####     ####
 
-km2 = kmeans(data_kmeans, centers = 3, nstart = 30)
-p1 <- fviz_cluster(km2, data = data_kmeans, frame.type = "convex") +
+km2 = kmeans(data_km_sc, centers = 2, nstart = 100)
+km2$centers
+km2$size
+
+km5 = kmeans(data_km_sc, centers = 5, nstart = 100)
+km5$centers
+km5$size
+km3 = kmeans(data_km_sc, centers = 3, nstart = 100)
+km3$centers
+km3$size
+
+df = rbind(km3$centers, attr(x = data_km_sc, "scaled:center"))
+df = cbind(df, c(km3$size,0))
+write.csv(df, file = "./resultados.csv")
+p1 <- fviz_cluster(km2, data = data_km_sc, frame.type = "convex") +
   theme_minimal() + ggtitle("k = 2") 
 p1
+p2 <- fviz_cluster(km5, data = data_kmeans, frame.type = "convex") +
+    theme_minimal() + ggtitle("k = 5") 
+p2
 
-fviz_nbclust(data_kmeans, kmeans, method = "wss", k.max = 24) + theme_minimal() + ggtitle("the Elbow Method")
+p3 <- fviz_cluster(km3, data = data_kmeans, frame.type = "convex") +
+    theme_bw() + ggtitle("") 
+p3
+ggsave(plot = p3, filename = "./3_cluster.png", units = "cm", height = 8, width = 15.5)
 
-gap_stat <- clusGap(data_kmeans, FUN = kmeans, nstart = 30, K.max = 24, B = 50)
+
+fviz_nbclust(data_km_sc, kmeans, method = "wss", k.max = 8) + theme_minimal() + ggtitle("the Elbow Method")
+
+gap_stat <- clusGap(data_km_sc, FUN = kmeans, nstart = 30, K.max = 8, B = 50)
 fviz_gap_stat(gap_stat) + theme_minimal() + ggtitle("fviz_gap_stat: Gap Statistic")
 
-fviz_nbclust(data_kmeans, kmeans, method = "silhouette", k.max = 24) + theme_minimal() + ggtitle("The Silhouette Plot")
+fviz_nbclust(data_km_sc, kmeans, method = "silhouette", k.max = 8) + theme_minimal() + ggtitle("The Silhouette Plot")
 
-res.nbclust <- NbClust(data_kmeans, distance = "euclidean",
+res.nbclust <- NbClust(data_km_sc, distance = "euclidean",
                        min.nc = 2, max.nc = 9, 
                        method = "complete", index ="all")
-factoextra::fviz_nbclust(res.nbclust) + labs(x = "Número de clusters") +theme_minimal() + ggtitle("NbClust's optimal number of clusters")
+factoextra::fviz_nbclust(res.nbclust) + labs(x = "Número de clústeres", y = "Cantidad de índices") +theme_bw() + ggtitle("")
+ggsave("./indices_cluster.png", units = "cm", height = 8, width = 15.5)
 
+res.nbclust$All.index
 
 # Mas alto el consumo energetico en la zona urbana que en la zona rural, porque?
 data %>% 
