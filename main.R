@@ -185,10 +185,10 @@ data %>%
   # Variables para realizar la agrupacion  
   #1 Indice de tenencia de articulos de alta gama
    valTenencia<-data %>% 
-     mutate(secodaraRopa=if_else(CP1=="Si" | CP1=="Sí", 1, 0, missing = 0)) %>%
-     mutate(maquinaCoser=if_else(CW1=="Si" | CW1=="Sí", 1, 0, missing = 0)) %>%
-     mutate(cepElect=if_else(CZ1=="Si" | CZ1=="Sí", 1, 0, missing = 0)) %>%
-     mutate(vhs=if_else(CAC1=="Si" | CAC1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(secodaraRopa=if_else(CP1=="Si" | CP1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(maquinaCoser=if_else(CW1=="Si" | CW1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(cepElect=if_else(CZ1=="Si" | CZ1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(vhs=if_else(CAC1=="Si" | CAC1=="Sí", 1, 0, missing = 0)) %>%
     mutate(badidora=if_else(CD1=="Si" | CD1=="Sí", 1, 0, missing = 0)) %>%
     mutate(cafetera=if_else(CE1=="Si" | CE1=="Sí", 1, 0, missing = 0)) %>%
     mutate(plantilla=if_else(CH1=="Si" | CH1=="Sí", 1, 0, missing = 0)) %>%
@@ -207,12 +207,12 @@ data %>%
 
    valTenencia %>% 
      group_by(A5) %>% 
-     summarise(val=mean(indiceTenencia))
+     summarise(val=mean(tenencia))
    
-  data$tenencia = valTenencia$indiceTenencia
+  data$tenencia = valTenencia$tenencia
   
   
-  # 2. Estado-Area Urbana y Rural (A5)
+  # 2. Estado-Area Urbana y Rural (A5)(no se usó para el cluster)
   
   # 3. Las variables de consumo energetico al final del documento
   
@@ -222,21 +222,22 @@ valSocio = data %>%
   mutate(indiceSocio=Socio/10) %>% 
   select(indiceSocio, Socio, A5, D2, Consumo, ELECTJ) 
 
-cor(valSocio$indiceSocio, valSocio$ELECTJ)
-cor(valSocio$indiceSocio, valSocio$Consumo)
+# Correlaciones entre las variables
+cor(valTenencia$tenencia, data$GASTJ)
+cor(valTenencia$tenencia, data$ELECTJ)
+cor(valTenencia$tenencia, data$LEÑATJ)
+cor(valTenencia$tenencia, data$CARBONTJ)
+
+cor(valSocio$Socio, data$GASTJ)
+cor(valSocio$Socio, data$ELECTJ)
+cor(valSocio$Socio, data$LEÑATJ)
+cor(valSocio$Socio, data$CARBONTJ)
+
 valSocio %>% 
   group_by(A5) %>% 
-  summarise(val=mean(indiceSocio))
+  summarise(val=mean(Socio))
 
-
-cor(valSocio$indiceSocio, valTenencia$indiceTenencia)
-cor(data$CARBONTJ, valSocio$indiceSocio)
-cor(data$Consumo, valSocio$indiceSocio)
-cor(data$ELECTJ, valTenencia$indiceTenencia)
-cor(data$Consumo, valTenencia$indiceTenencia)
-cor(data$A5, valTenencia$indiceTenencia)
-
-data$IndiceSocio = valSocio$indiceSocio
+data$IndiceSocio = valSocio$Socio
 
 cor(data$tenencia, data$IndiceSocio)
 
