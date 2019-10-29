@@ -177,32 +177,32 @@ ing <- data %>%
   ggsave("./ing_por_educ.png", units="cm", height = 8, width = 15.5)
   dev.off()
 
+data %>% 
+  count(H7_C1) %>% 
+  mutate(fre=n/nrow(data))
 
   #### We will create two index, one for social economic status and one for articles
   # Variables para realizar la agrupacion  
   #1 Indice de tenencia de articulos de alta gama
    valTenencia<-data %>% 
-    mutate(cocina=if_else(CA1=="Si" | CA1=="Sí", 1, 0, missing = 0)) %>%
-    mutate(hornoC=if_else(CB1=="Si" | CB1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(lavaPlatos=if_else(CL1=="Si" | CL1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(lavadoraRopa=if_else(CN1=="Si" | CN1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(secodaraRopa=if_else(CP1=="Si" | CP1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(tanqueAgua=if_else(CR1=="Si" | CR1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(tanqueAguaIns=if_else(CS1=="Si" | CS1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(calentadorSolar=if_else(CT1=="Si" | CT1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(aireAcon=if_else(CU1=="Si" | CU1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(bombaAgua=if_else(CV1=="Si" | CV1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(plantaElec=if_else(CX1=="Si" | CX1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(portonElec=if_else(CY1=="Si" | CY1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(impresora=if_else(CAF1=="Si" | CAF1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(compu=if_else(H1=="Si" | H1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(consol=if_else(H4=="Si" | H4=="Sí", 1, 0, missing = 0)) %>%
-    mutate(aspiradora=if_else(H7_C1=="Si" | H7_C1=="Sí", 1, 0, missing = 0)) %>% 
-    mutate(tel=if_else(Totaltv!=0, 1, 0)) %>% 
-    mutate(ref=if_else(G1=="1", 1, if_else(G1=="2", 1, if_else(G1=="3", 1, 0)), missing = 0)) %>%  
-    mutate(tenencia=cocina+hornoC+lavaPlatos+lavadoraRopa+secodaraRopa+tanqueAgua+tanqueAguaIns
-           +calentadorSolar+aireAcon+bombaAgua+plantaElec+portonElec+impresora+compu+consol+aspiradora+tel+ref) %>% 
-     mutate(indiceTenencia=tenencia/18) %>% 
+     mutate(secodaraRopa=if_else(CP1=="Si" | CP1=="Sí", 1, 0, missing = 0)) %>%
+     mutate(maquinaCoser=if_else(CW1=="Si" | CW1=="Sí", 1, 0, missing = 0)) %>%
+     mutate(cepElect=if_else(CZ1=="Si" | CZ1=="Sí", 1, 0, missing = 0)) %>%
+     mutate(vhs=if_else(CAC1=="Si" | CAC1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(badidora=if_else(CD1=="Si" | CD1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(cafetera=if_else(CE1=="Si" | CE1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(plantilla=if_else(CH1=="Si" | CH1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(tostador=if_else(CJ1=="Si" | CJ1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(parrilla=if_else(CM1=="Si" | CM1=="Sí", 1, 0, missing = 0)) %>% 
+    mutate(impresora=if_else(CAF1=="Si" | CAF1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(consola=if_else(H4=="Si" | H4=="Sí", 1, 0, missing = 0)) %>%
+    mutate(ollaCocimiento=if_else(H7_A1=="Si" | H7_A1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(secPelo=if_else(H7_B1=="Si" | H7_B1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(aspiradora=if_else(H7_C1=="Si" | H7_B1=="Sí", 1, 0, missing = 0)) %>%
+    mutate(tenencia=secodaraRopa + maquinaCoser + cepElect + vhs + badidora + 
+             cafetera + plantilla + tostador + parrilla + impresora + consola + 
+             ollaCocimiento + secPelo + aspiradora) %>% 
+     mutate(indiceTenencia=tenencia/14) %>% 
     select(tenencia, indiceTenencia, A5, D2, Consumo, ELECTJ)
 
    valTenencia %>% 
@@ -216,17 +216,10 @@ ing <- data %>%
   
   # 3. Las variables de consumo energetico al final del documento
   
-  # 4. Indice Socieconómico
+  # 4. Calificacion grupo socioeconómico de la familia
 valSocio = data %>% 
-  mutate(ing=case_when(
-    Ingreso == "500 mil colones o menos" ~ 1,
-    Ingreso == "501 mil a 750 mil"  ~ 2,
-    Ingreso == "751 mil a un millón" ~ 3,
-    Ingreso == "Más de un millón" ~ 4,
-    TRUE ~ 0
-  )) %>% 
-  mutate(Socio=ing+if_else(!is.na(L8), as.numeric(L8), 0)+if_else(!is.na(L9), as.numeric(L9), 0)) %>% 
-  mutate(indiceSocio=Socio/24) %>% 
+  mutate(Socio=if_else(!is.na(L9), as.numeric(L9), 0)) %>% 
+  mutate(indiceSocio=Socio/10) %>% 
   select(indiceSocio, Socio, A5, D2, Consumo, ELECTJ) 
 
 cor(valSocio$indiceSocio, valSocio$ELECTJ)
