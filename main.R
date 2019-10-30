@@ -317,6 +317,7 @@ head(data_kmeans)
 data_kmeans$K3_1VEZ[data_kmeans$K3_1VEZ == 3] = 4
 data_kmeans$K3_1VEZ[data_kmeans$K3_1VEZ != 4] = km3$cluster
 
+
 centros = data_kmeans %>% group_by(K3_1VEZ) %>% summarize(B2 = mean(B2),
                                                 Socio = mean(IndiceSocio),
                                                 tenencia = mean(tenencia),
@@ -330,6 +331,9 @@ means = apply(data_kmeans, 2, mean)
 means = c(0,means,0)
 centros = rbind(centros, means)
 centros
+
+data_kmeans$A5 = data$A5
+table(data_kmeans$K3_1VEZ, data_kmeans$A5)[,1]/table(data_kmeans$K3_1VEZ)
 
 #df = rbind(km3$centers, attr(x = data_km_sc, "scaled:center"))
 #df = cbind(df, c(km3$size,0))
