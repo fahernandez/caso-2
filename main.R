@@ -244,15 +244,15 @@ cor(data$tenencia, data$IndiceSocio)
 attr(data, "variable.labels")
 
 #cuál tipo de energía consumen más
-mayor_consumo = data[,105:108] %>% 
-  apply(1, FUN = function(x) which(x == max(x))) 
-data$mayor_consumo = mayor_consumo
+# mayor_consumo = data[,105:108] %>% 
+#   apply(1, FUN = function(x) which(x == max(x))) 
+# data$mayor_consumo = mayor_consumo
 
-data_kmeans = data %>% select(A5, B2, IndiceSocio, tenencia, ELECTJ, GASTJ, LEÑATJ)
+data_kmeans = data %>% select(B2, IndiceSocio, tenencia, ELECTJ, GASTJ, LEÑATJ)
 apply(data_kmeans, 2, FUN = function(x) sum(is.na(x)))
 head(data_kmeans)
 
-data_kmeans$A5 = data_kmeans$A5 %>% as.numeric(.)
+#data_kmeans$A5 = data_kmeans$A5 %>% as.numeric(.)
 data_km_sc = scale(data_kmeans)
 #### PCA ####
 res.pca <- PCA(data_km_sc,  graph = FALSE)
@@ -260,20 +260,81 @@ res.pca <- PCA(data_km_sc,  graph = FALSE)
 fviz_screeplot(res.pca, addlabels = TRUE, ylim = c(0, 50))
 ####     ####
 
-km2 = kmeans(data_km_sc, centers = 2, nstart = 100)
-km2$centers
-km2$size
+#best number of k clusters
+res.nbclust <- NbClust(data_km_sc, distance = "euclidean",
+                       min.nc = 2, max.nc = 9, 
+                       method = "complete", index ="all")
+factoextra::fviz_nbclust(res.nbclust) + labs(x = "Número de clústeres", y = "Cantidad de índices") +theme_bw() + ggtitle("")
+ggsave("./indices_cluster.png", units = "cm", height = 8, width = 15.5)
 
-km5 = kmeans(data_km_sc, centers = 5, nstart = 100)
-km5$centers
-km5$size
+res.nbclust$All.index
+
+
+
+# km2 = kmeans(data_km_sc, centers = 2, nstart = 100)
+# km2$centers
+# km2$size
+# 
+# km5 = kmeans(data_km_sc, centers = 5, nstart = 100)
+# km5$centers
+# km5$size
+
 km3 = kmeans(data_km_sc, centers = 3, nstart = 100)
 km3$centers
 km3$size
 
-df = rbind(km3$centers, attr(x = data_km_sc, "scaled:center"))
-df = cbind(df, c(km3$size,0))
-write.csv(df, file = "./resultados.csv")
+data_kmeans$K3_1VEZ = km3$cluster
+
+#### Removing some outliers
+data_kmeans2 = data_kmeans[data_kmeans$K3_1VEZ != 3, ]
+
+data_km_sc2 = scale(data_kmeans2[,1:6])
+head(data_km_sc2)
+
+#best number of k clusters
+res.nbclust <- NbClust(data_km_sc2, distance = "euclidean",
+                       min.nc = 2, max.nc = 9, 
+                       method = "complete", index ="all")
+factoextra::fviz_nbclust(res.nbclust) + labs(x = "Número de clústeres", y = "Cantidad de índices") +theme_bw() + ggtitle("")
+ggsave("./indices_cluster.png", units = "cm", height = 8, width = 15.5)
+
+res.nbclust$All.index
+
+# km2 = kmeans(data_km_sc, centers = 2, nstart = 100)
+# km2$centers
+# km2$size
+# 
+# km5 = kmeans(data_km_sc, centers = 5, nstart = 100)
+# km5$centers
+# km5$size
+
+km3 = kmeans(data_km_sc2, centers = 3, nstart = 100)
+km3$centers
+km3$size
+
+head(data_kmeans)
+### 4 son los 5 outliers
+data_kmeans$K3_1VEZ[data_kmeans$K3_1VEZ == 3] = 4
+data_kmeans$K3_1VEZ[data_kmeans$K3_1VEZ != 4] = km3$cluster
+
+centros = data_kmeans %>% group_by(K3_1VEZ) %>% summarize(B2 = mean(B2),
+                                                Socio = mean(IndiceSocio),
+                                                tenencia = mean(tenencia),
+                                                Elect = mean(ELECTJ),
+                                                Gast = mean(GASTJ),
+                                                Leña = mean(LEÑATJ))
+n = table(data_kmeans$K3_1VEZ)
+centros = data.frame(centros, N = n)
+centros
+means = apply(data_kmeans, 2, mean)
+means = c(0,means,0)
+centros = rbind(centros, means)
+centros
+
+#df = rbind(km3$centers, attr(x = data_km_sc, "scaled:center"))
+#df = cbind(df, c(km3$size,0))
+write.csv(centros, file = "./resultados.csv")
+
 p1 <- fviz_cluster(km2, data = data_km_sc, frame.type = "convex") +
   theme_minimal() + ggtitle("k = 2") 
 p1
@@ -281,7 +342,7 @@ p2 <- fviz_cluster(km5, data = data_kmeans, frame.type = "convex") +
     theme_minimal() + ggtitle("k = 5") 
 p2
 
-p3 <- fviz_cluster(km3, data = data_kmeans, frame.type = "convex") +
+p3 <- fviz_cluster(km3, data = data_kmeans2, frame.type = "convex") +
     theme_bw() + ggtitle("") 
 p3
 ggsave(plot = p3, filename = "./3_cluster.png", units = "cm", height = 8, width = 15.5)
@@ -294,13 +355,6 @@ fviz_gap_stat(gap_stat) + theme_minimal() + ggtitle("fviz_gap_stat: Gap Statisti
 
 fviz_nbclust(data_km_sc, kmeans, method = "silhouette", k.max = 8) + theme_minimal() + ggtitle("The Silhouette Plot")
 
-res.nbclust <- NbClust(data_km_sc, distance = "euclidean",
-                       min.nc = 2, max.nc = 9, 
-                       method = "complete", index ="all")
-factoextra::fviz_nbclust(res.nbclust) + labs(x = "Número de clústeres", y = "Cantidad de índices") +theme_bw() + ggtitle("")
-ggsave("./indices_cluster.png", units = "cm", height = 8, width = 15.5)
-
-res.nbclust$All.index
 
 # Mas alto el consumo energetico en la zona urbana que en la zona rural, porque?
 data %>% 
